@@ -41,12 +41,23 @@ SERVER_CONFIG = {
     "changelog": "Enterprise Edition 7.0.1 - Security & Performance Upgrade"
 }
 
-# --- Database (In-Memory for this version, can be upgraded to SQLite/MySQL) ---
-# Format: {license_key: {"status": "ACTIVE", "expiry": "YYYY-MM-DD", "hwid": None, "type": "PRO"}}
+# --- Database ---
 LICENSES = {
-    # Pre-populated with user provided keys
-    "SWIFT-PRO-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    # ... (other default licenses will be merged/overwritten by load_data)
+    # --- USER REQUESTED PERMANENT LOGIN ---
+    "1994560": {
+        "status": "ACTIVE",
+        "expiry": "2030-12-31", # Valid for 5 years
+        "hwid": None, 
+        "type": "ADMIN",
+        "linked_reg_id": "chsalmanatok4"
+    },
+    "chsalmanatok4": {
+        "status": "ACTIVE",
+        "expiry": "2030-12-31",
+        "hwid": None,
+        "type": "REGISTRATION",
+        "linked_license": "1994560"
+    }
 }
 
 # Load saved data on startup
@@ -56,14 +67,6 @@ if saved_data:
         SERVER_CONFIG.update(saved_data["config"])
     if "licenses" in saved_data:
         LICENSES.update(saved_data["licenses"])
-
-# --- Default Hardcoded Licenses (REMOVED as per request) ---
-DEFAULT_LICENSES = {} 
-
-# Merge defaults if not present
-for k, v in DEFAULT_LICENSES.items():
-    if k not in LICENSES:
-        LICENSES[k] = v
 
 # --- Routes ---
 
