@@ -73,45 +73,81 @@ def home():
 
 @app.route('/verify', methods=['POST'])
 def verify_license():
-    """Endpoint for the main application to verify a license"""
+    """Endpoint for the main application to verify a license (Smart Check)"""
     data = request.json
-    key = data.get('license_key')
+    
+    # Inputs from client (might be swapped or mixed)
+    input_1 = data.get('license_key', '').strip()
+    input_2 = data.get('email', '').strip() # This is the "Registration ID" field in UI
     hwid = data.get('hw_id')
-    email = data.get('email')
     
-    if not key or not hwid:
-        return jsonify({"valid": False, "message": "Missing credentials"}), 400
+    if not hwid:
+        return jsonify({"valid": False, "message": "Missing HWID"}), 400
         
-    license_data = LICENSES.get(key)
+    # --- SMART LOOKUP LOGIC ---
+    # We want to find a valid license entry that matches EITHER input_1 or input_2
     
-    if not license_data:
-        return jsonify({"valid": False, "message": "Invalid License Key"}), 401
+    found_key = None
+    
+    # Check 1: Is input_1 a valid License Key?
+    if input_1 in LICENSES:
+        found_key = input_1
+    # Check 2: Is input_2 a valid License Key?
+    elif input_2 in LICENSES:
+        found_key = input_2
         
+    if not found_key:
+        return jsonify({"valid": False, "message": "Invalid License Key or Registration ID"}), 401
+        
+    license_data = LICENSES[found_key]
+    
+    # --- CHECK PAIRING ---
+    # If this license is linked to a Registration ID, verify the OTHER input matches it
+    linked_reg = license_data.get('linked_reg_id')
+    linked_lic = license_data.get('linked_license')
+    
+    # Identify which input was the key we found, and which is the 'other' one provided
+    other_input = input_2 if found_key == input_1 else input_1
+    
+    # Case A: found_key is the Main License Key
+    if linked_reg:
+        if linked_reg != other_input:
+             return jsonify({"valid": False, "message": "Registration ID does not match License Key"}), 401
+
+    # Case B: found_key is the Registration ID (treated as a license entry)
+    if linked_lic:
+        if linked_lic != other_input:
+             return jsonify({"valid": False, "message": "License Key does not match Registration ID"}), 401
+
+    # --- STATUS CHECKS ---
     if license_data['status'] != 'ACTIVE':
         return jsonify({"valid": False, "message": f"License is {license_data['status']}"}), 403
         
-    # HWID Locking Logic
+    # --- HWID LOCKING ---
+    # Lock BOTH the License Key AND the Registration ID entry to the same HWID
+    
+    # Update current found entry
     if license_data['hwid'] is None:
-        # First time use - lock to this HWID
         license_data['hwid'] = hwid
-        logging.info(f"License {key} locked to HWID: {hwid}")
-        save_data() # Save changes
+        logging.info(f"License {found_key} locked to HWID: {hwid}")
+        save_data() 
     elif license_data['hwid'] != hwid:
         return jsonify({"valid": False, "message": "License locked to another device"}), 403
-
-    # Email Locking Logic (New)
-    current_email_lock = license_data.get('email')
-    if current_email_lock is None and email:
-        license_data['email'] = email
-        logging.info(f"License {key} locked to Email: {email}")
-        save_data() # Save changes
-    elif current_email_lock and email and current_email_lock != email:
-        return jsonify({"valid": False, "message": "License locked to another email address"}), 403
         
-    # Expiry Check
+    # Also update the linked entry (to keep them in sync)
+    linked_key = linked_reg or linked_lic
+    if linked_key and linked_key in LICENSES:
+        if LICENSES[linked_key]['hwid'] is None:
+            LICENSES[linked_key]['hwid'] = hwid
+            save_data()
+        elif LICENSES[linked_key]['hwid'] != hwid:
+             return jsonify({"valid": False, "message": "Linked credential locked to another device"}), 403
+
+    # --- EXPIRY CHECK ---
     expiry_date = datetime.strptime(license_data['expiry'], "%Y-%m-%d")
     if datetime.now() > expiry_date:
         license_data['status'] = "EXPIRED"
+        save_data()
         return jsonify({"valid": False, "message": "License Expired"}), 403
         
     return jsonify({
