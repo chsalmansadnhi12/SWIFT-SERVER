@@ -57,6 +57,8 @@ if saved_data:
     if "licenses" in saved_data:
         LICENSES.update(saved_data["licenses"])
 
+# --- Default Hardcoded Licenses (Will be merged if not in saved_data) ---
+DEFAULT_LICENSES = {
     "SWIFT-PRO-V5": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
     "MARGIN-WIRE-FLASHER": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "FLASHER"},
     "SWIFT-MARGIN-WIRE-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
@@ -75,8 +77,6 @@ if saved_data:
     "UBS-LICENSE-KEY": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
     "SWIFT-UBS-VISA-NET-CRYPTO-HOST": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "HOST"},
     "UBS-VISA-NET-SWIFT-CRYPTO-HOST-SOFTWARE": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "HOST"},
-    
-    # Registration Keys
     "REG-1234-5678": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
     "REG-ADMIN-001": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "ADMIN"},
     "REG-MARGIN-WIRE": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
@@ -92,6 +92,11 @@ if saved_data:
     "REG-MARGIN-FLASHER": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
     "REG-SWIFT-TERMINAL": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
 }
+
+# Merge defaults if not present
+for k, v in DEFAULT_LICENSES.items():
+    if k not in LICENSES:
+        LICENSES[k] = v
 
 # --- Routes ---
 
