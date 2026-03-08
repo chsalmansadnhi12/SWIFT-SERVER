@@ -36,9 +36,9 @@ def save_data():
 
 # --- Server State (In-Memory) ---
 SERVER_CONFIG = {
-    "latest_version": "2.0.0",
+    "latest_version": "7.0.1",
     "update_url": "https://swifftbanksoftwares.com/downloads/update_latest.exe",
-    "changelog": "Initial Release"
+    "changelog": "Enterprise Edition 7.0.1 - Security & Performance Upgrade"
 }
 
 # --- Database (In-Memory for this version, can be upgraded to SQLite/MySQL) ---
