@@ -57,41 +57,8 @@ if saved_data:
     if "licenses" in saved_data:
         LICENSES.update(saved_data["licenses"])
 
-# --- Default Hardcoded Licenses (Will be merged if not in saved_data) ---
-DEFAULT_LICENSES = {
-    "SWIFT-PRO-V5": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "MARGIN-WIRE-FLASHER": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "FLASHER"},
-    "SWIFT-MARGIN-WIRE-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "UBS-VISA-NET-CRYPTO": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "CRYPTO"},
-    "UBS-SWIFT-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "ADMIN-LICENSE": {"status": "ACTIVE", "expiry": "2030-12-31", "hwid": None, "type": "ADMIN"},
-    "FLASHING-LICENSE": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "FLASHER"},
-    "UBS-VISA-NET-SWIFT-CRYPTO-HOST": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "HOST"},
-    "SWIFT-PRO-2024-X": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "SWIFT-2024-PRO-V5": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "SWIFT-UBS-VISA-NET-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "SWIFT-UBS-VISA-NET-PRO": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "SWIFT-UBS-VISA-NET-V5": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "MARGIN-FLASHER-PRO": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "FLASHER"},
-    "SWIFT-TERMINAL-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "TERMINAL"},
-    "UBS-LICENSE-KEY": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "PRO"},
-    "SWIFT-UBS-VISA-NET-CRYPTO-HOST": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "HOST"},
-    "UBS-VISA-NET-SWIFT-CRYPTO-HOST-SOFTWARE": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "HOST"},
-    "REG-1234-5678": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-ADMIN-001": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "ADMIN"},
-    "REG-MARGIN-WIRE": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-SWIFT-PRO": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-UBS-VISA-NET": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-UBS-SWIFT-2024": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-2024-SWIFT": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-8888-9999": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-5555-6666": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-0000-1111": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-1111-2222": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-3333-4444": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-MARGIN-FLASHER": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-    "REG-SWIFT-TERMINAL": {"status": "ACTIVE", "expiry": "2025-12-31", "hwid": None, "type": "REG"},
-}
+# --- Default Hardcoded Licenses (REMOVED as per request) ---
+DEFAULT_LICENSES = {} 
 
 # Merge defaults if not present
 for k, v in DEFAULT_LICENSES.items():
@@ -184,7 +151,7 @@ def update_config():
 
 @app.route('/admin/generate', methods=['POST'])
 def generate_license():
-    """Generate a new license key"""
+    """Generate a new license key AND a matching Registration ID"""
     data = request.json
     admin_key = data.get('admin_key')
     
@@ -193,24 +160,51 @@ def generate_license():
         
     license_type = data.get('type', 'PRO')
     days = data.get('days', 365)
-    custom_key = data.get('custom_key')
     
-    if custom_key:
-        new_key = custom_key
+    # Custom inputs
+    custom_lic = data.get('custom_key')
+    custom_reg = data.get('custom_reg')
+    
+    # Generate License Key if not provided
+    if custom_lic:
+        new_lic_key = custom_lic
     else:
-        new_key = f"SWIFT-{uuid.uuid4().hex[:8].upper()}-{datetime.now().year}"
+        new_lic_key = f"SWIFT-{uuid.uuid4().hex[:8].upper()}-{datetime.now().year}"
+        
+    # Generate Registration ID if not provided
+    if custom_reg:
+        new_reg_id = custom_reg
+    else:
+        new_reg_id = f"REG-{uuid.uuid4().hex[:4].upper()}-{uuid.uuid4().hex[:4].upper()}"
         
     expiry = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
     
-    LICENSES[new_key] = {
+    # Store BOTH as separate entries but linked by logic (or just store both as valid)
+    # Storing License
+    LICENSES[new_lic_key] = {
         "status": "ACTIVE",
         "expiry": expiry,
         "hwid": None,
-        "type": license_type
+        "type": license_type,
+        "linked_reg_id": new_reg_id  # Link them for reference
     }
     
-    save_data() # Save new license
-    return jsonify({"success": True, "key": new_key, "expiry": expiry})
+    # Storing Registration ID (as a type of license, or just valid entry)
+    LICENSES[new_reg_id] = {
+        "status": "ACTIVE",
+        "expiry": expiry,
+        "hwid": None,
+        "type": "REGISTRATION",
+        "linked_license": new_lic_key
+    }
+    
+    save_data() # Save new data
+    return jsonify({
+        "success": True, 
+        "license_key": new_lic_key, 
+        "registration_id": new_reg_id,
+        "expiry": expiry
+    })
 
 @app.route('/admin/list', methods=['POST'])
 def list_licenses():
